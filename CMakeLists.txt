@@ -118,16 +118,38 @@ add_executable(alpha_node
     src/alpha_node.cpp
 )
 set_target_properties(alpha_node PROPERTIES COMPILE_FLAGS -std=c++11)
-
-## Add cmake target dependencies of the executable/library
-## as an example, message headers may need to be generated before nodes
-# add_dependencies(svs_node svs_generate_messages_cpp)
-
-## Specify libraries to link a library or executable target against
 target_link_libraries(alpha_node
     svs
     ${catkin_LIBRARIES}
 )
+
+add_executable(vis_node 
+    src/vis_node.cpp
+)
+set_target_properties(vis_node PROPERTIES COMPILE_FLAGS -std=c++11)
+target_link_libraries(vis_node
+    svs
+    ${catkin_LIBRARIES}
+)
+
+add_executable(fp_node 
+    src/fp_node.cpp
+)
+set_target_properties(fp_node PROPERTIES COMPILE_FLAGS -std=c++11)
+target_link_libraries(fp_node
+    svs
+    ${catkin_LIBRARIES}
+)
+
+add_executable(eval_node 
+    src/eval_node.cpp
+)
+set_target_properties(eval_node PROPERTIES COMPILE_FLAGS -std=c++11)
+target_link_libraries(eval_node
+    svs
+    ${catkin_LIBRARIES}
+)
+
 
 #############
 ## Install ##
