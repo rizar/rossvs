@@ -16,7 +16,7 @@ FeaturePointSearcher::FeaturePointSearcher(PointCloud::ConstPtr input, int numFP
 void FeaturePointSearcher::OrderAscendingly() {
     std::vector< std::pair<float, int> > ps(Input_->size());
     for (int i = 0; i < ps.size(); ++i) {
-        ps[i].first = AdjustedGradientNorms_[i];
+        ps[i].first = AdjustedGradientNorms_.at(i);
         ps[i].second = i;
     }
     std::sort(ps.begin(), ps.end());
@@ -33,7 +33,7 @@ void FeaturePointSearcher::Search() {
 
     for (int idx : SortedOrder_) {
         int const y0 = idx / Width_;
-        int const x0 = idx / Height_;
+        int const x0 = idx % Width_;
 
         bool neighborTaken = false;
         GridRadiusTraversal grt(Height_, Width_);
