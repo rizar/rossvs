@@ -7,25 +7,33 @@
 #include <functional>
 
 struct Color {
-    int r = 0;
-    int g = 0;
-    int b = 0;
+    int R = 0;
+    int G = 0;
+    int B = 0;
 
     Color() {
     }
 
     Color(PointType const& point)
-        : r(point.r)
-        , g(point.g)
-        , b(point.b)
+        : R(point.r)
+        , G(point.g)
+        , B(point.b)
     {
     }
 
     Color(std::initializer_list<int> const& list) {
         auto it = list.begin();
-        r = *(it++);
-        g = *(it++);
-        b = *it;
+        R = *(it++);
+        G = *(it++);
+        B = *it;
+    }
+
+    static Color fromRelative(float r, float g, float b) {
+        Color res;
+        res.R = (int)(255 * r);
+        res.G = (int)(255 * g);
+        res.B = (int)(255 * b);
+        return res;
     }
 };
 
@@ -67,9 +75,9 @@ public:
             }
             Color col = ColorMap_(cp);
 
-            colors[j * 3 + 0] = static_cast<unsigned char> (col.r);
-            colors[j * 3 + 1] = static_cast<unsigned char> (col.g);
-            colors[j * 3 + 2] = static_cast<unsigned char> (col.b);
+            colors[j * 3 + 0] = static_cast<unsigned char> (col.R);
+            colors[j * 3 + 1] = static_cast<unsigned char> (col.G);
+            colors[j * 3 + 2] = static_cast<unsigned char> (col.B);
             j++;
         }
         return (true);

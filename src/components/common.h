@@ -23,6 +23,11 @@ P createPoint(float x, float y, float z) {
     return p;
 }
 
+template <class P>
+PointType toPointType(P const& p) {
+    return createPoint<PointType>(p.getX(), p.getY(), p.getZ());
+}
+
 inline bool pointHasNan(PointType const& p) {
     return pcl_isnan(p.x) || pcl_isnan(p.y) || pcl_isnan(p.z);
 }
