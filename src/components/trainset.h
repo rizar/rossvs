@@ -19,8 +19,7 @@ public:
 
 public:
     void GenerateFromSensor(PointCloud const& input, std::vector<float> const& localRes);
-    void GenerateUsingNormals(PointCloud const& input, NormalCloud const& normals,
-            std::vector<float> const& localRes);
+    void GenerateUsingNormals(PointCloud const& input, NormalCloud const& normals, float gap);
 
 private:
     int AddPoint(int x, int y, PointType const& point, float label);

@@ -189,6 +189,7 @@ public:
     int Iteration = 0;
     int SVCount = 0;
     int TouchedCount = 0;
+    int MarginCrossCount = 0;
     float TargetFunction = 0.0;
     float Rho = 0.0;
 

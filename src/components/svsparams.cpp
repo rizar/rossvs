@@ -13,11 +13,10 @@ void SVSParams::Load(const char* path) {
     read_xml(path, pt);
     GET(pt, int, Seed);
     GET(pt, float, MaxAlpha);
-    GET(pt, float, KernelWidth);
+    GET(pt, float, SupportSize);
     GET(pt, float, KernelThreshold);
     GET(pt, float, TerminateEps);
     GET(pt, float, SmoothingRange);
-    GET(pt, int, BorderWidth);
     GET(pt, float,  StepWidth);
     GET(pt, float, TakeProb);
     GET(pt, int, NumFP);
@@ -30,11 +29,10 @@ void SVSParams::Save(const char* path) {
     ptree pt;
     PUT(pt, Seed);
     PUT(pt, MaxAlpha);
-    PUT(pt, KernelWidth);
+    PUT(pt, SupportSize);
     PUT(pt, KernelThreshold);
     PUT(pt, TerminateEps);
     PUT(pt, SmoothingRange);
-    PUT(pt, BorderWidth);
     PUT(pt, StepWidth);
     PUT(pt, TakeProb);
     PUT(pt, NumFP);

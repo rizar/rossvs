@@ -83,8 +83,8 @@ private:
 
 public:
     float Gamma;
-    float Radius2;
-    float PixelRadius;
+    float KernelRadius2;
+    float KernelRadius;
 
     PointCloud::Ptr Objects;
     std::vector<float> Labels;

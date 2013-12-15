@@ -72,6 +72,16 @@ void BaseBuilder::CalcDistanceToNN() {
 
 void SVSBuilder::SetParams(const SVSParams &params) {
     Params_ = params;
+
+    // at the distance SupportSize / 2 the kernel value must be 1e-2
+    Gamma = -4 * log(Params_.SupportMinKernel) / sqr(Params_.SupportSize);
+    std::cout << "Gamma: " << Gamma << '\n';
+
+    // at the distance sqrt(Radius2) the kernel value must be KernelThreshold
+    KernelRadius2 = -log(Params_.KernelThreshold) / Gamma;
+
+    KernelRadius = sqrt(KernelRadius2);
+    std::cout << "KernelRadius: " << KernelRadius << '\n';
 }
 
 void SVSBuilder::GenerateTrainingSet() {
@@ -79,12 +89,12 @@ void SVSBuilder::GenerateTrainingSet() {
 
     srand(Params_.Seed);
     TrainingSetGenerator tsg(
-            Params_.BorderWidth,
+            1, // temporary hack
             Params_.TakeProb,
             Params_.StepWidth);
     if (Params_.UseNormals) {
         CalcNormals();
-        tsg.GenerateUsingNormals(*Input, *Normals, DistToNN);
+        tsg.GenerateUsingNormals(*Input, *Normals, Params_.SupportSize);
     } else {
         tsg.GenerateFromSensor(*Input, DistToNN);
     }
@@ -110,11 +120,6 @@ void SVSBuilder::CalcNormals() {
 
 void SVSBuilder::SetInputCloud(PointCloud::ConstPtr input) {
     BaseBuilder::SetInputCloud(input);
-    Gamma = 1 / sqr(Params_.KernelWidth * Resolution);
-    PixelRadius = static_cast<int>(sqrt(-log(Params_.KernelThreshold))
-        * Params_.KernelWidth);
-    Radius2 = -log(Params_.KernelThreshold)
-        * sqr(Params_.KernelWidth * Resolution);
 }
 
 void SVSBuilder::InitSVM(std::vector<SVMFloat> const& alphas) {
@@ -128,9 +133,9 @@ void SVSBuilder::Learn() {
         Strategy.reset(new GridNeighbourModificationStrategy(
                     Input->height, Input->width,
                     Grid2Num_, Num2Grid_,
-                    Params_.KernelWidth,
-                    Params_.KernelThreshold,
-                    Resolution,
+                    KernelRadius,
+                    Pixel2RawIndex,
+                    DistToNN,
                     Params_.CacheSize));
         SVM_.SetStrategy(Strategy);
     }
@@ -184,9 +189,15 @@ void SVSBuilder::BuildGrid2SV() {
 void SVSBuilder::BuildDF(int y, int x, DecisionFunction * df) {
     df->Reset(Gamma, SVM().Rho);
     PointType const& point = Input->at(x, y);
-    Grid2SV_.TraverseRectangle(y, x, PixelRadius, [this, &point, &df] (int /*y*/, int /*x*/, int idx) {
+
+    float const rawIndex = Pixel2RawIndex[y * Width_ + x];
+    // always +5 to for feeling safe...
+    float const kernelRadiusInPixels = (int)ceil(KernelRadius / DistToNN[rawIndex]) + 5;
+
+    Grid2SV_.TraverseRectangle(y, x, kernelRadiusInPixels,
+            [this, &point, &df] (int /*y*/, int /*x*/, int idx) {
                 PointType const& sv = Objects->operator[](idx);
-                if (pcl::squaredEuclideanDistance(point, sv) <= Radius2) {
+                if (pcl::squaredEuclideanDistance(point, sv) <= KernelRadius2) {
                     df->AddSupportVector(sv, SVM().Alphas()[idx]);
                 }
             });

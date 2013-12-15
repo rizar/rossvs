@@ -36,9 +36,7 @@ void TrainingSetGenerator::GenerateFromSensor(PointCloud const& input,
     }
 }
 
-void TrainingSetGenerator::GenerateUsingNormals(const PointCloud & input, const NormalCloud & normals,
-        const std::vector<float> & localRes)
-{
+void TrainingSetGenerator::GenerateUsingNormals(const PointCloud & input, const NormalCloud & normals, float gap) {
     Grid2Num.Resize(input.height, input.width);
     Pixel2Num.resize(input.height * input.width);
 
@@ -58,7 +56,7 @@ void TrainingSetGenerator::GenerateUsingNormals(const PointCloud & input, const 
             pcl::flipNormalTowardsViewpoint(point, 0, 0, 0, nv3f[0], nv3f[1], nv3f[2]);
             nv3f *= -1;
             nv3f /= nv3f.norm();
-            nv3f *= Step_ * localRes[indexNoNan];
+            nv3f *= Step_ * gap;
 
             num = AddPoint(x, y, point, +1);
 

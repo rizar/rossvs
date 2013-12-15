@@ -53,13 +53,16 @@ void GridNeighbourModificationStrategy::InitializeNeighbors(int idx) {
         NumCacheMisses++;
     }
 
-    int const y = Num2Grid_[idx].first;
-    int const x = Num2Grid_[idx].second;
+    int const y = Num2Grid_.at(idx).first;
+    int const x = Num2Grid_.at(idx).second;
+    // always +5 to for feeling safe...
+    float const rawIndex = Pixel2RawIndex_.at(y * GridWidth_ + x);
+    float const kernelRadiusInPixels = (int)ceil(KernelRadius_ / LocalResolution_.at(rawIndex)) + 5;
 
-    Grid2Num_.TraverseRectangle(y, x, Radius_,
+    Grid2Num_.TraverseRectangle(y, x, kernelRadiusInPixels,
             [this, &idx, &nbh, &qvls] (int /*y*/, int /*x*/, int nbhIdx) {
                 float const dist2 = Parent()->Dist2(idx, nbhIdx);
-                if (dist2 <= Radius2Scaled_) {
+                if (dist2 <= KernelRadius2_) {
                     nbh.push_back(nbhIdx);
                     qvls.push_back(Parent()->QValue(idx, nbhIdx, dist2));
                 }
@@ -107,10 +110,7 @@ float GridNeighbourModificationStrategy::QValue(int i, int j) {
     // there is no need for a speed here
     auto cellI = Num2Grid_.at(i);
     auto cellJ = Num2Grid_.at(j);
-    if (abs(cellI.first - cellJ.first) <= Radius_ &&
-        abs(cellI.second - cellJ.second) <= Radius_ &&
-        Parent()->Dist2(i, j) <= Radius2Scaled_)
-    {
+    if (Parent()->Dist2(i, j) <= KernelRadius2_) {
         return Parent()->QValue(i, j);
     }
     return 0.0;

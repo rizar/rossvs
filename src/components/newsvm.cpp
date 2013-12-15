@@ -179,15 +179,12 @@ void SVM3D::Train(PointCloud const& points, std::vector<float> const& labels) {
     CalcRho();
     CalcSVCount();
     CalcTargetFunction();
-
-    for (int i = 0; i < N_; ++i) {
-        TouchedCount += Sol_.Touched[i];
-    }
 }
 
 bool SVM3D::Iterate() {
     // check for convergence
-    if (Sol_.LowerValue() - Sol_.UpperValue() < Eps_) {
+    SVMFloat kkt = Sol_.LowerValue() - Sol_.UpperValue();
+    if (kkt < Eps_) {
         return false;
     }
 
@@ -210,6 +207,11 @@ bool SVM3D::Iterate() {
     SVMFloat & Aj = Sol_.Alphas[j];
     SVMFloat const oldAi = Ai;
     SVMFloat const oldAj = Aj;
+
+    /*if (Iteration > 0 && Iteration % 100 == 0) {
+        CalcTargetFunction();
+        std::cout << "Current TF: " << TargetFunction << " KKT: " << kkt << std::endl;
+    }*/
 
     if (Labels_[i] != Labels_[j])
     {
@@ -307,10 +309,16 @@ void SVM3D::CalcTargetFunction() {
 
 void SVM3D::CalcSVCount() {
     SVCount = 0;
+    TouchedCount = 0;
+    MarginCrossCount = 0;
     for (int i = 0; i < N_; ++i) {
         if (Sol_.Alphas[i] > 0) {
             SVCount++;
         }
+        if (Sol_.Alphas[i] > C_ - 1e-2) {
+            MarginCrossCount++;
+        }
+        TouchedCount += Sol_.Touched[i];
     }
 }
 

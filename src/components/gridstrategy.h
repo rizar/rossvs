@@ -56,18 +56,20 @@ public:
             int gridWidth,
             Grid2Numbers const& grid2num,
             Number2Grid const& num2grid,
-            float kernelWidth,
-            float kernelThreshold,
-            float resolution,
+            float kernelRadius,
+            std::vector<int> const& pixel2RawIndex,
+            std::vector<float> const& localResolution,
             int cacheSize)
         : GridHeight_(gridHeight)
         , GridWidth_(gridWidth)
         , Grid2Num_(grid2num)
         , Num2Grid_(num2grid)
         , MaxTotalNeighbors_(cacheSize / 8)
+        , KernelRadius_(kernelRadius)
+        , KernelRadius2_(sqr(kernelRadius))
+        , Pixel2RawIndex_(pixel2RawIndex)
+        , LocalResolution_(localResolution)
     {
-        Radius_ = static_cast<int>(ceil(sqrt(-log(kernelThreshold)) * kernelWidth));
-        Radius2Scaled_ = -log(kernelThreshold) * sqr(resolution * kernelWidth);
     }
 
     virtual void InitializeFor(SVM3D * parent);
@@ -92,8 +94,12 @@ public:
 private:
     int GridHeight_;
     int GridWidth_;
-    int Radius_;
-    float Radius2Scaled_;
+
+    float KernelRadius_;
+    float KernelRadius2_;
+
+    std::vector<int> Pixel2RawIndex_;
+    std::vector<float> LocalResolution_;
 
     Grid2Numbers const& Grid2Num_;
     Number2Grid const& Num2Grid_;
