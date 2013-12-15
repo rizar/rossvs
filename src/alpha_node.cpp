@@ -43,6 +43,18 @@ void callback(sensor_msgs::PointCloud2ConstPtr msg) {
     builder.GenerateTrainingSet();
     builder.Learn();
 
+    GridNeighbourModificationStrategy const& strat = *builder.Strategy;
+    std::cout << "SVM converged in " << builder.SVM().Iteration << " iterations" << std::endl;
+    std::cout << "SVM3D: " << builder.Objects->size() << " input vectors" << std::endl;
+    std::cout << "SVM3D: " << builder.SVM().SVCount << " support vectors" << std::endl;
+    std::cout << "SVM3D: " << builder.SVM().TargetFunction << " target function" << std::endl;
+    std::cout << "SVM3D: " << builder.SVM().TouchedCount << " touched count" << std::endl;
+    std::cout << "SVM3D: " << builder.SVM().MarginCrossCount << " margin cross count" << std::endl;
+    std::cout << "GridStrategy: Number of cache misses: " << strat.NumCacheMisses << std::endl;
+    std::cout << "GridStrategy: Number of optimization failures: " << strat.NumOptimizeFailures << std::endl;
+    std::cout << "GridStrategy: Average number of neighbors: " <<
+        static_cast<float>(strat.TotalNeighborsProcessed) / strat.NumNeighborsCalculations << std::endl;
+
     int const nTrainingObjects = builder.Objects->size();
     double const* alphas = builder.SVM().Alphas();
 
