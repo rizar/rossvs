@@ -104,7 +104,6 @@ add_library(svs
     src/components/df.cpp
     src/components/gridstrategy.cpp
     src/components/newsvm.cpp
-    src/components/searcher.cpp
     src/components/trainset.cpp
     src/components/svsparams.cpp
 )

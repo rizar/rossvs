@@ -20,6 +20,7 @@ void SVSParams::Load(const char* path) {
     GET(pt, float,  StepWidth);
     GET(pt, float, TakeProb);
     GET(pt, int, NumFP);
+    GET(pt, float, FPSpace);
     GET(pt, size_t, CacheSize);
     GET(pt, bool, UseGrid);
     GET(pt, bool, UseNormals);
@@ -36,6 +37,7 @@ void SVSParams::Save(const char* path) {
     PUT(pt, StepWidth);
     PUT(pt, TakeProb);
     PUT(pt, NumFP);
+    PUT(pt, FPSpace);
     PUT(pt, CacheSize);
     PUT(pt, UseGrid);
     PUT(pt, UseNormals);

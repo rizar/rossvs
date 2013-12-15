@@ -13,9 +13,11 @@ struct SVSParams {
 
     float SmoothingRange = 5;
     float StepWidth = 0.1; // in support sizes
+
     float TakeProb = 1.0;
 
     int NumFP = 100;
+    float FPSpace = 0.5; // in support sizes
 
     size_t CacheSize = 1 << 30;
 

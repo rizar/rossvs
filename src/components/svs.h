@@ -52,6 +52,7 @@ public:
     PointCloud::ConstPtr Input;
     PointCloud::Ptr InputNoNan;
     std::vector<float> DistToNN; // raw indices
+    std::vector<float> LocalResolution; // raw indices
     std::vector<int> RawIndex2Pixel; // raw indices
     std::vector<int> Pixel2RawIndex; // pixel indices
 };
@@ -80,6 +81,7 @@ public:
 private:
     void BuildDF(int y, int x, DecisionFunction * df);
     void BuildGrid2SV();
+    void BuildFPOrder();
 
 public:
     float Gamma;
@@ -112,4 +114,7 @@ private:
 
 // workhorse
     SVM3D SVM_;
+
+// FP search order
+    std::vector<float> FPOrder_;
 };

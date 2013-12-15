@@ -10,7 +10,6 @@
 
 #include <svs/Alphas.h>
 #include "components/svs.h"
-#include "components/searcher.h"
 
 int numFeaturePoints;
 ros::Publisher svsPub;
@@ -47,6 +46,8 @@ void extractAndPublishSVS(svs::AlphasConstPtr alphaMsg,
         pcl::toROSMsg(*fp, msg);
         msg.header = cloudMsg->header;
         svsPub.publish(msg);
+
+        ROS_INFO_STREAM("Published " << fp->size() << " feature points");
     }
 }
 

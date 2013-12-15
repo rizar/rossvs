@@ -1,6 +1,5 @@
 #include "svs.h"
 #include "trainset.h"
-#include "searcher.h"
 #include "analysis.h"
 
 #include "pcl/features/integral_image_normal.h"
@@ -68,6 +67,26 @@ void BaseBuilder::CalcDistanceToNN() {
         InputKDTree_->nearestKSearch(i, 2, indices, dist2);
         DistToNN[i] = sqrt(dist2[1]);
     }
+
+    LocalResolution.resize(InputNoNan->size());
+    for (int i = 0; i < InputNoNan->size(); ++i) {
+        int const pixelIdx = RawIndex2Pixel[i];
+        int const x0 = pixelIdx % Width_;
+        int const y0 = pixelIdx / Width_;
+
+        int nbhCount = 0;
+        GridRadiusTraversal grt(Height_, Width_);
+        grt.TraverseRectangle(y0, x0, 5,
+                [this, i, &nbhCount] (int y, int x) {
+                    int const nbh = Pixel2RawIndex[y * Width_ + x];
+                    if (nbh != -1) {
+                        LocalResolution[i] += DistToNN[nbh];
+                        nbhCount++;
+                    }
+                });
+
+        LocalResolution[i] /= nbhCount;
+    }
 }
 
 void SVSBuilder::SetParams(const SVSParams &params) {
@@ -96,7 +115,7 @@ void SVSBuilder::GenerateTrainingSet() {
         CalcNormals();
         tsg.GenerateUsingNormals(*Input, *Normals, Params_.SupportSize);
     } else {
-        tsg.GenerateFromSensor(*Input, DistToNN);
+        tsg.GenerateFromSensor(*Input, LocalResolution);
     }
 
     Objects.reset(new PointCloud(tsg.Objects));
@@ -135,7 +154,7 @@ void SVSBuilder::Learn() {
                     Grid2Num_, Num2Grid_,
                     KernelRadius,
                     Pixel2RawIndex,
-                    DistToNN,
+                    LocalResolution,
                     Params_.CacheSize));
         SVM_.SetStrategy(Strategy);
     }
@@ -192,7 +211,7 @@ void SVSBuilder::BuildDF(int y, int x, DecisionFunction * df) {
 
     float const rawIndex = Pixel2RawIndex[y * Width_ + x];
     // always +5 to for feeling safe...
-    float const kernelRadiusInPixels = (int)ceil(KernelRadius / DistToNN[rawIndex]) + 5;
+    float const kernelRadiusInPixels = (int)ceil(KernelRadius / LocalResolution[rawIndex]) + 5;
 
     Grid2SV_.TraverseRectangle(y, x, kernelRadiusInPixels,
             [this, &point, &df] (int /*y*/, int /*x*/, int idx) {
@@ -211,10 +230,52 @@ void SVSBuilder::ToImageLayout(std::vector<float> const& data, std::vector<float
 }
 
 void SVSBuilder::FeaturePointSearch() {
-    std::vector<float> tmp;
-    ToImageLayout(AdjustedGradientNorms, &tmp);
-    FeaturePointSearcher s(Input, Params_.NumFP, tmp);
-    s.Search();
+    BuildFPOrder();
 
-    FeaturePoints = s.FeaturePoints;
+    std::vector< std::vector<bool> > taken(Height_, std::vector<bool>(Width_));
+    FeaturePoints.reset(new PointCloud);
+
+    for (int idx : FPOrder_) {
+        PointType const& point = InputNoNan->at(idx);
+
+        int const pixelIdx = RawIndex2Pixel[idx];
+        int const x0 = pixelIdx % Width_;
+        int const y0 = pixelIdx / Width_;
+
+        float const minSpace = Params_.SupportSize * Params_.FPSpace;
+        float const minSpace2 = sqr(minSpace);
+        int const checkInPixels = (int)ceil(minSpace / LocalResolution[idx]) + 5;
+
+        bool neighborTaken = false;
+        GridRadiusTraversal grt(Height_, Width_);
+        grt.TraverseRectangle(y0, x0, checkInPixels,
+                [this, &taken, &neighborTaken, point, y0, x0, minSpace2] (int y, int x) {
+                    PointType const& neighbor = Input->at(x, y);
+                    if (pcl::squaredEuclideanDistance(point, neighbor) < minSpace2 && taken[y][x]) {
+                        neighborTaken = true;
+                    }
+                });
+        if (! neighborTaken) {
+            taken[y0][x0] = true;
+            FeaturePoints->push_back(InputNoNan->at(idx));
+        }
+        if (FeaturePoints->size() == Params_.NumFP) {
+            break;
+        }
+    }
+}
+
+void SVSBuilder::BuildFPOrder() {
+    std::vector< std::pair<float, int> > ps(InputNoNan->size());
+    for (int i = 0; i < ps.size(); ++i) {
+        ps[i].first = AdjustedGradientNorms.at(i);
+        ps[i].second = i;
+    }
+    std::sort(ps.begin(), ps.end());
+    std::reverse(ps.begin(), ps.end());
+
+    FPOrder_.resize(ps.size());
+    for (int i = 0; i < ps.size(); ++i) {
+        FPOrder_[i] = ps[i].second;
+    }
 }
