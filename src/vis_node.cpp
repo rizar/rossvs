@@ -11,6 +11,9 @@
 std::string paramPath;
 
 ros::Publisher adjGradPub;
+ros::Publisher svPub;
+ros::Publisher posPub;
+ros::Publisher negPub;
 
 PointCloud::Ptr repainted(PointCloud const& cloud, std::function<Color (int, int)> colorMap) {
     PointCloud::Ptr result(new PointCloud(cloud));
@@ -24,6 +27,13 @@ PointCloud::Ptr repainted(PointCloud const& cloud, std::function<Color (int, int
         }
     }
     return result;
+}
+
+void publishPointCloud(ros::Publisher * pub, PointCloud const& pc, std_msgs::Header const& header) {
+    sensor_msgs::PointCloud2 msg;
+    pcl::toROSMsg(pc, msg);
+    msg.header = header;
+    pub->publish(msg);
 }
 
 void callback(
@@ -54,6 +64,49 @@ void callback(
     builder.InitSVM(alphaMsg->values);
     builder.CalcGradients();
 
+    // publish positive and negative examples in separate clouds
+    {
+        PointCloud pos;
+        PointCloud neg;
+        for (int i = 0; i < builder.Objects->size(); ++i) {
+            if (builder.Labels[i] == +1) {
+                pos.push_back(builder.Objects->at(i));
+            } else {
+                neg.push_back(builder.Objects->at(i));
+            }
+        }
+
+        {
+            publishPointCloud(&posPub, pos, cloudMsg->header);
+            publishPointCloud(&negPub, neg, cloudMsg->header);
+        }
+    }
+
+    // publish support vector cloud
+    {
+        PointCloud sv;
+        for (int i = 0; i < builder.Objects->size(); ++i) {
+            PointType p = builder.Objects->at(i);
+            if (alphaMsg->values[i] > 0.0) {
+                p.r = p.g = p.b = 0;
+                if (builder.Labels[i] == +1) {
+                    p.r = 255 * (alphaMsg->values[i] / params.MaxAlpha);
+                } else {
+                    p.b = 255 * (alphaMsg->values[i] / params.MaxAlpha);
+                }
+                sv.push_back(p);
+            }
+        }
+
+        sensor_msgs::PointCloud2 msg;
+        pcl::toROSMsg(sv, msg);
+        msg.header = cloudMsg->header;
+        svPub.publish(msg);
+
+        ROS_INFO_STREAM("Published " << sv.size() << " support vectors");
+    }
+
+    // publish adjusted gradient norm
     {
         std::vector<float> agn;
         builder.ToImageLayout(builder.AdjustedGradientNorms, &agn);
@@ -81,6 +134,9 @@ int main(int argc, char ** argv) {
     ROS_INFO_STREAM("Parameters path is " << paramPath);
 
     adjGradPub = n.advertise<sensor_msgs::PointCloud2>("svs/agn_point_cloud", 10);
+    svPub = n.advertise<sensor_msgs::PointCloud2>("svs/sv", 10);
+    posPub = n.advertise<sensor_msgs::PointCloud2>("svs/positive", 10);
+    negPub = n.advertise<sensor_msgs::PointCloud2>("svs/negative", 10);
 
     message_filters::Subscriber<svs::Alphas> alphaSubscriber(n,"/svs/alphas", 10);
     message_filters::Subscriber<sensor_msgs::PointCloud2> cloudSubscriber(n, "/camera/rgb/points", 10);
