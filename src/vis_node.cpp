@@ -114,7 +114,8 @@ void callback(
         PointCloud::Ptr agnCloud = repainted(*cloud, [&cloud, &agn, maxAgn] (int i, int j) {
                     int const idx = j * cloud->width + i;
                     float const relAgn = agn[idx] / maxAgn;
-                    return Color::fromRelative(relAgn, 0, 1 - relAgn);
+                    float const remap = std::max(0.0, 1 + 0.2 * log(relAgn));
+                    return Color::fromRelative(remap, 0, 1 - remap);
                 });
 
         sensor_msgs::PointCloud2 msg;
