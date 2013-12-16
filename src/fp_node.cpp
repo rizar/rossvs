@@ -12,6 +12,7 @@
 #include "components/svs.h"
 
 int numFeaturePoints;
+bool extractNarf;
 ros::Publisher svsPub;
 ros::Publisher narfPub;
 std::string paramPath;
@@ -99,7 +100,9 @@ void callback(
                     << " cloud in frame" << cloudMsg->header.frame_id);
 
     extractAndPublishSVS(alphaMsg, cloudMsg, cloud);
-    extractAndPublishNARF(cloudMsg, cloud);
+    if (extractNarf) {
+        extractAndPublishNARF(cloudMsg, cloud);
+    }
 
     ROS_INFO_STREAM("Job done in " << ros::WallTime::now() - before);
 }
@@ -107,8 +110,9 @@ void callback(
 int main(int argc, char ** argv) {
     ros::init(argc, argv, "svs_alpha_node");
 
-    ros::NodeHandle n;
+    ros::NodeHandle n("~");
     n.getParam("/svs/parampath", paramPath);
+    n.getParam("extract_narf", extractNarf);
     ROS_INFO_STREAM("Parameters path is " << paramPath);
 
     svsPub = n.advertise<sensor_msgs::PointCloud2>("/svs/fp", 1);
