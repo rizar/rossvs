@@ -34,8 +34,11 @@ public:
             .TraverseRectangle(x0, y0, r,
                     [this, &action] (int x, int y) {
                         for (int idx : Impl_[x][y]) {
-                            action(x, y, idx);
+                            if (! action(x, y, idx)) {
+                                return false;
+                            }
                         }
+                        return true;
                     });
     }
 

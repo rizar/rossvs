@@ -83,6 +83,7 @@ void BaseBuilder::CalcDistanceToNN() {
                         LocalResolution[i] += DistToNN[nbh];
                         nbhCount++;
                     }
+                    return true;
                 });
 
         LocalResolution[i] /= nbhCount;
@@ -223,6 +224,7 @@ void SVSBuilder::BuildDF(int y, int x, DecisionFunction * df) {
                 if (pcl::squaredEuclideanDistance(point, sv) <= KernelRadius2) {
                     df->AddSupportVector(sv, SVM().Alphas()[idx]);
                 }
+                return true;
             });
 }
 
@@ -236,7 +238,6 @@ void SVSBuilder::ToImageLayout(std::vector<float> const& data, std::vector<float
 void SVSBuilder::FeaturePointSearch() {
     BuildFPOrder();
 
-    std::vector< std::vector<bool> > taken(Height_, std::vector<bool>(Width_));
     FeaturePoints.reset(new PointCloud);
 
     for (int idx : FPOrder_) {
@@ -248,19 +249,24 @@ void SVSBuilder::FeaturePointSearch() {
 
         float const minSpace = Params_.SupportSize * Params_.FPSpace;
         float const minSpace2 = sqr(minSpace);
-        int const checkInPixels = (int)ceil(minSpace / LocalResolution[idx]) + 5;
+        int const checkInPixels = (int)ceil(minSpace / LocalResolution[idx]);
 
-        bool neighborTaken = false;
+        bool neighborBetter = false;
         GridRadiusTraversal grt(Height_, Width_);
         grt.TraverseRectangle(y0, x0, checkInPixels,
-                [this, &taken, &neighborTaken, point, y0, x0, minSpace2] (int y, int x) {
+                [this, &neighborBetter, idx, point, y0, x0, minSpace2] (int y, int x) {
+                    int const rawIndex = Pixel2RawIndex[y * Width_ + x];
                     PointType const& neighbor = Input->at(x, y);
-                    if (pcl::squaredEuclideanDistance(point, neighbor) < minSpace2 && taken[y][x]) {
-                        neighborTaken = true;
+                    if (rawIndex >= 0 &&
+                        pcl::squaredEuclideanDistance(point, neighbor) < minSpace2 &&
+                        GradientNorms[rawIndex] > GradientNorms[idx])
+                    {
+                        neighborBetter = true;
+                        return false;
                     }
+                    return true;
                 });
-        if (! neighborTaken) {
-            taken[y0][x0] = true;
+        if (! neighborBetter) {
             FeaturePoints->push_back(InputNoNan->at(idx));
         }
         if (FeaturePoints->size() == Params_.NumFP) {
