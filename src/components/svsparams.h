@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdlib>
+#include <string>
 
 struct SVSParams {
     int Seed = 1;
@@ -23,8 +24,11 @@ struct SVSParams {
 
     bool UseGrid = true;
     bool UseNormals = true;
+    bool DoNormalizeGradient = false;
 
     void Save(const char* path);
     void Load(const char* path);
+
+    std::string ToString();
 };
 

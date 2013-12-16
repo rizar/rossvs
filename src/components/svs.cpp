@@ -191,7 +191,11 @@ void SVSBuilder::CalcGradients() {
         Gradients->at(RawIndex2Pixel[i]) = toNormal(grad);
         NumCloseSV[i] = df.SVCount();
         GradientNorms[i] = grad.getVector3fMap().norm();
-        AdjustedGradientNorms[i] = NumCloseSV[i] ? GradientNorms[i] / NumCloseSV[i] : 0;
+        if (Params_.DoNormalizeGradient) {
+            AdjustedGradientNorms[i] = NumCloseSV[i] ? GradientNorms[i] / NumCloseSV[i] : 0;
+        } else {
+            AdjustedGradientNorms[i] = GradientNorms[i];
+        }
     }
 }
 

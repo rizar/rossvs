@@ -3,10 +3,31 @@
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/xml_parser.hpp>
 
+#include <string>
+
 using namespace boost::property_tree;
 
 #define PUT(pt, f) pt.put(#f, f)
 #define GET(pt, t, f) f = pt.get<t>(#f)
+
+namespace {
+    void initPTree(SVSParams const& ps, ptree * pt) {
+        PUT((*pt), ps.Seed);
+        PUT((*pt), ps.MaxAlpha);
+        PUT((*pt), ps.SupportSize);
+        PUT((*pt), ps.KernelThreshold);
+        PUT((*pt), ps.TerminateEps);
+        PUT((*pt), ps.SmoothingRange);
+        PUT((*pt), ps.StepWidth);
+        PUT((*pt), ps.TakeProb);
+        PUT((*pt), ps.NumFP);
+        PUT((*pt), ps.FPSpace);
+        PUT((*pt), ps.CacheSize);
+        PUT((*pt), ps.UseGrid);
+        PUT((*pt), ps.UseNormals);
+        PUT((*pt), ps.DoNormalizeGradient);
+    }
+}
 
 void SVSParams::Load(const char* path) {
     ptree pt;
@@ -24,24 +45,22 @@ void SVSParams::Load(const char* path) {
     GET(pt, size_t, CacheSize);
     GET(pt, bool, UseGrid);
     GET(pt, bool, UseNormals);
+    GET(pt, bool, DoNormalizeGradient);
 }
 
 void SVSParams::Save(const char* path) {
     ptree pt;
-    PUT(pt, Seed);
-    PUT(pt, MaxAlpha);
-    PUT(pt, SupportSize);
-    PUT(pt, KernelThreshold);
-    PUT(pt, TerminateEps);
-    PUT(pt, SmoothingRange);
-    PUT(pt, StepWidth);
-    PUT(pt, TakeProb);
-    PUT(pt, NumFP);
-    PUT(pt, FPSpace);
-    PUT(pt, CacheSize);
-    PUT(pt, UseGrid);
-    PUT(pt, UseNormals);
+    initPTree(*this, &pt);
     xml_writer_settings<char> settings(' ', 4);
     write_xml(path, pt, std::locale(), settings);
+}
+
+std::string SVSParams::ToString() {
+    ptree pt;
+    initPTree(*this, &pt);
+    xml_writer_settings<char> settings(' ', 4);
+    std::stringstream sstr;
+    write_xml(sstr, pt, settings);
+    return sstr.str();
 }
 

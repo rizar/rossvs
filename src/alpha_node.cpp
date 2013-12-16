@@ -1,4 +1,5 @@
 #include <ros/ros.h>
+#include <std_msgs/String.h>
 #include <sensor_msgs/PointCloud2.h>
 #include <pcl_conversions/pcl_conversions.h>
 
@@ -6,6 +7,7 @@
 #include "components/svs.h"
 
 ros::Publisher alphaPublisher;
+ros::Publisher paramPublisher;
 ros::Subscriber cloudSubscriber;
 
 int cutWidth = 640;
@@ -36,6 +38,13 @@ void callback(sensor_msgs::PointCloud2ConstPtr msg) {
     if (paramPath.size()) {
         params.Load(paramPath.c_str());
     }
+    // publish parameters
+    {
+        std_msgs::String paramStr;
+        paramStr.data = params.ToString();
+        paramPublisher.publish(paramStr);
+    }
+
 
     SVSBuilder builder;
     builder.SetParams(params);
@@ -78,6 +87,7 @@ int main(int argc, char ** argv) {
     ROS_INFO_STREAM("Parameters path is " << paramPath);
 
     alphaPublisher = n.advertise<svs::Alphas>("/svs/alphas", 1);
+    paramPublisher = n.advertise<std_msgs::String>("/svs/alpha_node_params", 1);
     cloudSubscriber = n.subscribe("/camera/rgb/points", 10, callback);
 
     ros::spin();
